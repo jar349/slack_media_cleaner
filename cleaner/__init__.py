@@ -2,8 +2,9 @@ from slackclient import SlackClient
 
 
 class Cleaner(object):
-    def __init__(self, config):
+    def __init__(self, config, args):
         self.config = config
+        self.args = args
         self.slack_client = SlackClient(config['slack_token'])
 
     def delete_file(self, file):
@@ -36,13 +37,19 @@ class Cleaner(object):
 
     def clean(self):
         current_page = 1
+        max_pages = self.args.pages
         more_pages = True
+        should_continue = True
 
-        while more_pages:
+        while more_pages and should_continue:
             more_pages, file_list = self.get_file_list_page(page=current_page)
             for file in file_list:
-                self.delete_file(file['id'])
+                if self.args.noop:
+                    print "would have deleted: " + file['name'] + "(" + file['id'] + ")"
+                else:
+                    self.delete_file(file['id'])
             current_page+=1
+            should_continue = current_page < max_pages if max_pages else True
 
         print "Done deleting images"
 
